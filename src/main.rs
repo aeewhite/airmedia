@@ -48,12 +48,23 @@ fn check_background_input(file: &PathBuf) -> Result<()> {
     );
     sp.tick();
     let meta = fs::metadata(file)?;
+    // Basic check
     if !meta.is_file() {
         bail!("Selected image is not a file");
     }
+    // Size Check
     let max_bytes = 7000000;
     if meta.len() > max_bytes {
         bail!("Image is larger than {:} limit", HumanBytes(max_bytes));
+    }
+    // File Type Check
+    if let Some(extension) = file.extension() {
+        let ext = extension.to_string_lossy().to_lowercase();
+        if ext != "jpg" && ext != "jpg" {
+            bail!("Background image must be of file type JPEG (.jpg or .jpeg)")
+        }
+    } else {
+        bail!("Background image must be of file type JPEG (.jpg or .jpeg)")
     }
     sp.finish_and_clear();
     println!("✔ Image meets requirements");
