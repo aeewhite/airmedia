@@ -1,0 +1,8 @@
+[package]
+name = "airmedia"
+version = "0.1.0"
+authors = ["Andrew White <aeewhite@gmail.com>"]
+
+[dependencies]
+quicli = "0.2"
+indicatif = "0.9.0"
