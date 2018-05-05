@@ -87,19 +87,18 @@ fn login_to_airmedia(auth: &str, ip: &IpAddr) -> Result<()> {
                     .template("{spinner} Logging in"),
             );
             sp.tick();
-            sleep(Duration::from_secs(3));
             let client = reqwest::Client::new();
             let params = [
                 ("login", "admin"),
                 ("account", &user),
                 ("password", &password),
             ];
-            // let _res = client
-            //     .post(&url)
-            //     .query(&[("lang", "en"), ("src", "AwLoginAdmin.html")])
-            //     .form(&params)
-            //     .send()?
-            //     .error_for_status()?;
+            let _res = client
+                .post(&url)
+                .query(&[("lang", "en"), ("src", "AwLoginAdmin.html")])
+                .form(&params)
+                .send()?
+                .error_for_status()?;
 
             sp.finish_and_clear();
             println!("✔ Login Complete");
@@ -120,7 +119,6 @@ fn upload_image(ip: &IpAddr, file: &PathBuf) -> Result<()> {
             .template("{spinner} Uploading new background"),
     );
     sp.tick();
-    sleep(Duration::from_secs(3));
     let client = reqwest::Client::new();
     let form = reqwest::multipart::Form::new().file("filename", &file)?;
     let mut _result = client
