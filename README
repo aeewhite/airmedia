@@ -1,0 +1,17 @@
+airmedia 0.1.1
+Upload a new background to an AirMedia device
+
+USAGE:
+    airmedia [FLAGS] [OPTIONS] <ip_addr> <background_file>
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+    -v, --verbose    Pass many times for more log output
+
+OPTIONS:
+    -a, --auth <auth>    Authentication to use in the form of user:password [default: admin:admin]
+
+ARGS:
+    <ip_addr>            IP Address of AirMedia device on network
+    <background_file>    Image to upload as background
