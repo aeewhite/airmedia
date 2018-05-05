@@ -9,8 +9,6 @@ use std::fs;
 use std::net::IpAddr;
 use std::path::PathBuf;
 use std::str::FromStr;
-use std::thread::sleep;
-use std::time::Duration;
 
 use indicatif::{HumanBytes, ProgressBar, ProgressStyle};
 
