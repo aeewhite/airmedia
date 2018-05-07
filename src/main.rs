@@ -85,7 +85,9 @@ fn login_to_airmedia(auth: &str, ip: &IpAddr) -> Result<()> {
                     .template("{spinner} Logging in"),
             );
             sp.tick();
-            let client = reqwest::Client::new();
+            let client = reqwest::Client::builder()
+                .danger_disable_hostname_verification()
+                .build()?;
             let params = [
                 ("login", "admin"),
                 ("account", &user),
@@ -117,7 +119,9 @@ fn upload_image(ip: &IpAddr, file: &PathBuf) -> Result<()> {
             .template("{spinner} Uploading new background"),
     );
     sp.tick();
-    let client = reqwest::Client::new();
+    let client = reqwest::Client::builder()
+        .danger_disable_hostname_verification()
+        .build()?;
     let form = reqwest::multipart::Form::new().file("filename", &file)?;
     let mut _result = client
         .post(&url)
