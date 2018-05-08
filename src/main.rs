@@ -75,7 +75,10 @@ fn login_to_airmedia(auth: &str, ip: &IpAddr) -> Result<()> {
         if let Some(password) = auth_parts.next() {
             info!("Using authentication {:?}:{:?}", user, password);
 
-            let url = format!("https://{}/cgi-bin/login.cgi", ip);
+            let url = format!(
+                "https://{}/cgi-bin/login.cgi?lang=en&src=AwLoginAdmin.html",
+                ip
+            );
             debug!("Logging in with {:}", url);
             let sp = ProgressBar::new_spinner();
             sp.enable_steady_tick(100);
@@ -87,18 +90,14 @@ fn login_to_airmedia(auth: &str, ip: &IpAddr) -> Result<()> {
             sp.tick();
             let client = reqwest::Client::builder()
                 .danger_disable_hostname_verification()
+                .danger_disable_certificate_validation_entirely()
                 .build()?;
             let params = [
                 ("login", "admin"),
                 ("account", &user),
                 ("password", &password),
             ];
-            let _res = client
-                .post(&url)
-                .query(&[("lang", "en"), ("src", "AwLoginAdmin.html")])
-                .form(&params)
-                .send()?
-                .error_for_status()?;
+            let _res = client.post(&url).form(&params).send()?.error_for_status()?;
 
             sp.finish_and_clear();
             println!("✔ Login Complete");
@@ -109,7 +108,10 @@ fn login_to_airmedia(auth: &str, ip: &IpAddr) -> Result<()> {
 }
 
 fn upload_image(ip: &IpAddr, file: &PathBuf) -> Result<()> {
-    let url = format!("https://{}/cgi-bin/web_index.cgi", ip);
+    let url = format!(
+        "https://{}/cgi-bin/web_index.cgi?lang=en&src=AwOsdTool.html",
+        ip
+    );
     debug!("Posting image to {:}", url);
     let sp = ProgressBar::new_spinner();
     sp.enable_steady_tick(100);
@@ -121,17 +123,17 @@ fn upload_image(ip: &IpAddr, file: &PathBuf) -> Result<()> {
     sp.tick();
     let client = reqwest::Client::builder()
         .danger_disable_hostname_verification()
+        .danger_disable_certificate_validation_entirely()
         .build()?;
     let form = reqwest::multipart::Form::new().file("filename", &file)?;
     let mut _result = client
         .post(&url)
-        .query(&[("lang", "en"), ("src", "AwOsdTool.html")])
         .multipart(form)
         .send()?
         .error_for_status()?;
 
     sp.finish_and_clear();
-    debug!("Response {:}", _result.text()?);
+    // debug!("Response {:}", _result.text()?);
     println!("✔ Image Uploaded");
     Ok(())
 }

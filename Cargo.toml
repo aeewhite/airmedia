@@ -6,4 +6,4 @@ authors = ["Andrew White <aeewhite@gmail.com>"]
 [dependencies]
 quicli = "0.2"
 indicatif = "0.9.0"
-reqwest = "0.8.5"
+reqwest = { git = "https://github.com/scottschroeder/reqwest", branch = "noverify" }
