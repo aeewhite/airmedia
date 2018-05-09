@@ -1,11 +1,15 @@
 #[macro_use]
 extern crate quicli;
 extern crate indicatif;
+extern crate regex;
 extern crate reqwest;
+
+use regex::Regex;
 
 use quicli::prelude::*;
 
 use std::fs;
+use std::io::Read;
 use std::net::IpAddr;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -32,8 +36,8 @@ struct Cli {
 main!(|args: Cli, log_level: verbosity| {
     let ip = IpAddr::from_str(&args.ip_addr)?;
     check_background_input(&args.background_file)?;
-    login_to_airmedia(&args.auth, &ip)?;
-    upload_image(&ip, &args.background_file)?;
+    let login_token = login_to_airmedia(&args.auth, &ip)?;
+    upload_image(&ip, &args.background_file, &login_token)?;
 });
 
 fn check_background_input(file: &PathBuf) -> Result<()> {
@@ -69,7 +73,7 @@ fn check_background_input(file: &PathBuf) -> Result<()> {
     Ok(())
 }
 
-fn login_to_airmedia(auth: &str, ip: &IpAddr) -> Result<()> {
+fn login_to_airmedia(auth: &str, ip: &IpAddr) -> Result<String> {
     let mut auth_parts = auth.splitn(2, ":");
     if let Some(user) = auth_parts.next() {
         if let Some(password) = auth_parts.next() {
@@ -97,20 +101,30 @@ fn login_to_airmedia(auth: &str, ip: &IpAddr) -> Result<()> {
                 ("account", &user),
                 ("password", &password),
             ];
-            let _res = client.post(&url).form(&params).send()?.error_for_status()?;
-
+            let mut res = client.post(&url).form(&params).send()?.error_for_status()?;
+            let mut res_str = String::new();
+            res.read_to_string(&mut res_str)?;
             sp.finish_and_clear();
+
+            info!(
+                "Login Response: {:?}",
+                get_status_from_airmedia_response(&res_str)
+            );
+
+            let token = get_token_from_airmedia_response(&res_str)?;
+
+            debug!("Login Token: {:?}", token);
             println!("✔ Login Complete");
-            return Ok(());
+            return Ok(token);
         }
     }
     bail!("Invalid username or password")
 }
 
-fn upload_image(ip: &IpAddr, file: &PathBuf) -> Result<()> {
+fn upload_image(ip: &IpAddr, file: &PathBuf, token: &str) -> Result<()> {
     let url = format!(
-        "https://{}/cgi-bin/web_index.cgi?lang=en&src=AwOsdTool.html",
-        ip
+        "https://{}/cgi-bin/web_index.cgi?lang=en&src=AwOsdTool.html&{:}",
+        ip, token
     );
     debug!("Posting image to {:}", url);
     let sp = ProgressBar::new_spinner();
@@ -126,14 +140,57 @@ fn upload_image(ip: &IpAddr, file: &PathBuf) -> Result<()> {
         .danger_disable_certificate_validation_entirely()
         .build()?;
     let form = reqwest::multipart::Form::new().file("filename", &file)?;
-    let mut _result = client
+    let mut result = client
         .post(&url)
         .multipart(form)
         .send()?
         .error_for_status()?;
+    let mut res_str = String::new();
+    result.read_to_string(&mut res_str)?;
 
     sp.finish_and_clear();
+    info!(
+        "Upload Response: {:?}",
+        get_status_from_airmedia_response(&res_str)
+    );
     // debug!("Response {:}", _result.text()?);
     println!("✔ Image Uploaded");
     Ok(())
+}
+
+fn get_status_from_airmedia_response(response: &str) -> Result<String> {
+    let pattern = Regex::new(r#"switch\(\s*"(?P<msg>.*?)"\s*\)"#)?;
+    let caps = pattern.captures(&response);
+    match caps {
+        Some(captures) => Ok(captures["msg"].into()),
+        None => bail!("Failed to search response for status message"),
+    }
+}
+
+fn get_token_from_airmedia_response(response: &str) -> Result<String> {
+    let pattern = Regex::new(r#"location.replace\(".*&(?P<token>\w*)"\)"#)?;
+    let caps = pattern.captures(&response);
+    match caps {
+        Some(captures) => Ok(captures["token"].into()),
+        None => bail!("Failed to search response for login token"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn get_status_test() {
+        let test_res = " switch( \"strAlertPasswordSuccess\" ) {";
+        let status = get_status_from_airmedia_response(test_res).unwrap();
+        assert_eq!("strAlertPasswordSuccess", status);
+    }
+
+    #[test]
+    fn get_login_token_test() {
+        let test_res = r#"location.replace("/cgi-bin/web_index.cgi?lang=en&src=AwSystem.html&7H5ncokWnQgaIdFW");"#;
+        let status = get_token_from_airmedia_response(test_res).unwrap();
+        assert_eq!("7H5ncokWnQgaIdFW", status);
+    }
 }
