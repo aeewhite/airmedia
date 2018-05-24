@@ -16,6 +16,9 @@ use std::str::FromStr;
 
 use indicatif::{HumanBytes, ProgressBar, ProgressStyle};
 
+#[derive(Debug)]
+struct Token(pub String);
+
 /// Upload a new background to an AirMedia device
 #[derive(Debug, StructOpt)]
 #[structopt(author = "")]
@@ -73,7 +76,7 @@ fn check_background_input(file: &PathBuf) -> Result<()> {
     Ok(())
 }
 
-fn login_to_airmedia(auth: &str, ip: &IpAddr) -> Result<String> {
+fn login_to_airmedia(auth: &str, ip: &IpAddr) -> Result<Token> {
     let mut auth_parts = auth.splitn(2, ":");
     if let Some(user) = auth_parts.next() {
         if let Some(password) = auth_parts.next() {
@@ -111,7 +114,7 @@ fn login_to_airmedia(auth: &str, ip: &IpAddr) -> Result<String> {
                 get_status_from_airmedia_response(&res_str)
             );
 
-            let token = get_token_from_airmedia_response(&res_str)?;
+            let token = Token(get_token_from_airmedia_response(&res_str)?);
 
             debug!("Login Token: {:?}", token);
             println!("✔ Login Complete");
@@ -121,10 +124,10 @@ fn login_to_airmedia(auth: &str, ip: &IpAddr) -> Result<String> {
     bail!("Invalid username or password")
 }
 
-fn upload_image(ip: &IpAddr, file: &PathBuf, token: &str) -> Result<()> {
+fn upload_image(ip: &IpAddr, file: &PathBuf, token: &Token) -> Result<()> {
     let url = format!(
-        "https://{}/cgi-bin/web_index.cgi?lang=en&src=AwOsdTool.html&{:}",
-        ip, token
+        "https://{}/cgi-bin/web_index.cgi?lang=en&src=AwOsdTool.html&{}",
+        ip, token.0
     );
     debug!("Posting image to {:}", url);
     let sp = ProgressBar::new_spinner();
