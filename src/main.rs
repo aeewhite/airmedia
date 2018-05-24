@@ -58,14 +58,14 @@ fn check_background_input(file: &PathBuf) -> Result<()> {
         bail!("Selected image is not a file");
     }
     // Size Check
-    let max_bytes = 522240;
+    let max_bytes = 522_240;
     if meta.len() > max_bytes {
         bail!("Image is larger than {:} limit", HumanBytes(max_bytes));
     }
     // File Type Check
     if let Some(extension) = file.extension() {
         let ext = extension.to_string_lossy().to_lowercase();
-        if ext != "jpg" && ext != "jpg" {
+        if ext != "jpg" && ext != "jpeg" {
             bail!("Background image must be of file type JPEG (.jpg or .jpeg)")
         }
     } else {
@@ -77,7 +77,7 @@ fn check_background_input(file: &PathBuf) -> Result<()> {
 }
 
 fn login_to_airmedia(auth: &str, ip: &IpAddr) -> Result<Token> {
-    let mut auth_parts = auth.splitn(2, ":");
+    let mut auth_parts = auth.splitn(2, ':');
     if let Some(user) = auth_parts.next() {
         if let Some(password) = auth_parts.next() {
             info!("Using authentication {:?}:{:?}", user, password);
