@@ -96,8 +96,7 @@ fn login_to_airmedia(auth: &str, ip: &IpAddr) -> Result<Token> {
             );
             sp.tick();
             let client = reqwest::Client::builder()
-                .danger_disable_hostname_verification()
-                .danger_disable_certificate_validation_entirely()
+                .danger_accept_invalid_certs(true)
                 .build()?;
             let params = [
                 ("login", "admin"),
@@ -139,8 +138,7 @@ fn upload_image(ip: &IpAddr, file: &PathBuf, token: &Token) -> Result<()> {
     );
     sp.tick();
     let client = reqwest::Client::builder()
-        .danger_disable_hostname_verification()
-        .danger_disable_certificate_validation_entirely()
+        .danger_accept_invalid_certs(true)
         .build()?;
     let form = reqwest::multipart::Form::new().file("filename", &file)?;
     let mut result = client
